@@ -129,12 +129,13 @@ Python и модель запускаются отдельным процесс�
 
 ## Docker
 
-```bash
-docker compose up --build
-```
+Dockerfile этого модуля собирает CPU-образ API. Запуск всего приложения и хранение весов
+настраиваются единственным Compose-файлом в корневом репозитории
+[cv-complex-test](https://github.com/DanyaChetvyrtov/cv-complex-test#запуск-всего-проекта).
+В этом модуле Compose-файлов нет. Команды Docker Compose выполняйте из корня общего проекта.
 
-API доступен на `http://localhost:8000`. Веса сохраняются в Docker volume
-`model-cache`; первый старт требует интернета. Образ использует CPU-версию PyTorch.
+После запуска стенда API доступен на `http://127.0.0.1:8000`. Веса сохраняются в volume
+`cv-test_model-cache`; первый старт требует интернета.
 
 ## Настройки
 
@@ -188,4 +189,3 @@ pytest -m integration
 [FastAPI UploadFile](https://fastapi.tiangolo.com/tutorial/request-files/).
 У Ultralytics есть условия AGPL-3.0 и коммерческого лицензирования:
 [официальная информация](https://www.ultralytics.com/license).
-
