@@ -8,18 +8,7 @@ from cv_test.api import create_app
 from cv_test.config import Settings
 from cv_test.faces import FaceEmbedding, SFaceExtractor
 from cv_test.images import ImageInputError
-from cv_test.schemas import BoundingBox, DetectionResult
-
-
-class EmptyDetector:
-    def detect(self, image, confidence):
-        return DetectionResult(
-            model="stub",
-            width=image.shape[1],
-            height=image.shape[0],
-            inference_ms=0,
-            detections=[],
-        )
+from cv_test.schemas import BoundingBox
 
 
 class FakeFaces:
@@ -36,7 +25,7 @@ class FakeFaces:
 
 def test_internal_face_api_validates_images_and_returns_a_vector(png_bytes):
     with TestClient(
-        create_app(Settings(face_enabled=False), EmptyDetector(), FakeFaces())
+        create_app(Settings(face_enabled=False), FakeFaces())
     ) as client:
         result = client.post("/faces/embedding", files={"image": ("face.png", png_bytes)})
         assert result.status_code == 200
@@ -50,7 +39,7 @@ def test_internal_face_api_validates_images_and_returns_a_vector(png_bytes):
 
 
 def test_disabled_faces_are_explicitly_unavailable(png_bytes):
-    with TestClient(create_app(Settings(face_enabled=False), EmptyDetector())) as client:
+    with TestClient(create_app(Settings(face_enabled=False))) as client:
         assert (
             client.post("/faces/embedding", files={"image": ("a.png", png_bytes)}).status_code
             == 503
@@ -64,7 +53,7 @@ def test_face_validation_status_is_preserved(status, png_bytes):
             raise ImageInputError("Invalid face", status)
 
     with TestClient(
-        create_app(Settings(face_enabled=False), EmptyDetector(), InvalidFace())
+        create_app(Settings(face_enabled=False), InvalidFace())
     ) as client:
         response = client.post("/faces/embedding", files={"image": ("a.png", png_bytes)})
         assert response.status_code == status
@@ -76,7 +65,7 @@ def test_face_model_failure_does_not_leak_details(png_bytes):
             raise RuntimeError("Private file/device details")
 
     with TestClient(
-        create_app(Settings(face_enabled=False), EmptyDetector(), FailedFace())
+        create_app(Settings(face_enabled=False), FailedFace())
     ) as client:
         response = client.post("/faces/embedding", files={"image": ("a.png", png_bytes)})
         assert response.status_code == 503
