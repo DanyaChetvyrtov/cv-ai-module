@@ -1,1 +1,1 @@
-"""Object detection for local Python calls, a CLI, and HTTP integration."""
+"""Local face detection and embedding service for employee verification."""
