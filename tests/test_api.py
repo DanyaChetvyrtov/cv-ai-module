@@ -34,7 +34,7 @@ def test_valid_upload_returns_documented_contract(png_bytes):
             )
         ]
     )
-    with TestClient(create_app(Settings(), detector)) as client:
+    with TestClient(create_app(Settings(face_enabled=False), detector)) as client:
         assert client.get("/health").status_code == 200
         response = client.post(
             "/vision/detect?confidence=0.7", files={"image": ("photo.png", png_bytes, "image/png")}
@@ -49,7 +49,7 @@ def test_valid_upload_returns_documented_contract(png_bytes):
 
 def test_no_objects_is_success_and_uses_default_confidence(png_bytes):
     detector = StubDetector()
-    with TestClient(create_app(Settings(confidence=0.4), detector)) as client:
+    with TestClient(create_app(Settings(face_enabled=False, confidence=0.4), detector)) as client:
         response = client.post("/vision/detect", files={"image": ("photo.png", png_bytes)})
     assert response.status_code == 200
     assert response.json()["detections"] == []
@@ -58,7 +58,7 @@ def test_no_objects_is_success_and_uses_default_confidence(png_bytes):
 
 @pytest.mark.parametrize("query", ["0", "1.1", "abc"])
 def test_rejects_invalid_confidence(query, png_bytes):
-    with TestClient(create_app(Settings(), StubDetector())) as client:
+    with TestClient(create_app(Settings(face_enabled=False), StubDetector())) as client:
         response = client.post(
             f"/vision/detect?confidence={query}", files={"image": ("p.png", png_bytes)}
         )
@@ -66,14 +66,14 @@ def test_rejects_invalid_confidence(query, png_bytes):
 
 
 def test_requires_upload():
-    with TestClient(create_app(Settings(), StubDetector())) as client:
+    with TestClient(create_app(Settings(face_enabled=False), StubDetector())) as client:
         assert client.post("/vision/detect").status_code == 422
 
 
 @pytest.mark.parametrize("data", [b"", b"broken JPEG"])
 def test_rejects_bad_image_without_running_model(data):
     detector = StubDetector()
-    with TestClient(create_app(Settings(), detector)) as client:
+    with TestClient(create_app(Settings(face_enabled=False), detector)) as client:
         response = client.post("/vision/detect", files={"image": ("x.jpg", data)})
     assert response.status_code == 400
     assert detector.confidences == []
@@ -81,7 +81,9 @@ def test_rejects_bad_image_without_running_model(data):
 
 def test_rejects_large_upload(png_bytes):
     detector = StubDetector()
-    with TestClient(create_app(Settings(max_upload_bytes=8), detector)) as client:
+    with TestClient(
+        create_app(Settings(face_enabled=False, max_upload_bytes=8), detector)
+    ) as client:
         response = client.post("/vision/detect", files={"image": ("p.png", png_bytes)})
     assert response.status_code == 413
     assert detector.confidences == []
@@ -92,7 +94,7 @@ def test_reports_inference_error(png_bytes):
         def detect(self, image, confidence):
             raise RuntimeError("Internal device details")
 
-    with TestClient(create_app(Settings(), FailingDetector())) as client:
+    with TestClient(create_app(Settings(face_enabled=False), FailingDetector())) as client:
         response = client.post("/vision/detect", files={"image": ("p.png", png_bytes)})
     assert response.status_code == 503
     assert response.json() == {"detail": "Object detection is unavailable."}

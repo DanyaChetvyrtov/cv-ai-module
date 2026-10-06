@@ -24,3 +24,10 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -m "not integration"
+      - name: Test real YuNet and SFace
+        env:
+          CV_RUN_FACE_INTEGRATION: "1"
+          CV_FACE_TEST_IMAGE: /tmp/cv-test-face.png
+        run: |
+          python scripts/fetch_test_face.py /tmp/cv-test-face.png
+          pytest tests/test_face_integration.py

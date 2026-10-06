@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "cv-test"
 version = "0.1.0"
-description = "Small YOLO object detection module with a FastAPI service and CLI"
+description = "Local YOLO object detection and YuNet/SFace facial embeddings with FastAPI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -27,7 +27,7 @@ cv-detect = "cv_test.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["integration: requires real YOLO weights and runs CPU inference"]
+markers = ["integration: requires real model weights and runs CPU inference"]
 
 [tool.ruff]
 line-length = 100

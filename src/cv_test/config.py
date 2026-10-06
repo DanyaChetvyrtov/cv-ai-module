@@ -13,3 +13,6 @@ class Settings(BaseSettings):
     confidence: float = Field(default=0.25, ge=0.01, le=1.0)
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     max_image_pixels: int = Field(default=20_000_000, gt=0)
+    face_enabled: bool = True
+    face_models_path: Path = Path("models")
+    min_face_size: int = Field(default=60, ge=20, le=300)

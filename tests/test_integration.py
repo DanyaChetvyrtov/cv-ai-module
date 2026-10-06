@@ -22,7 +22,7 @@ def test_real_yolo_api_and_cli(tmp_path):
 
     torch.set_num_threads(2)
     photo = Path(ultralytics.__file__).parent / "assets" / "bus.jpg"
-    with TestClient(create_app(Settings(device="cpu"))) as client:
+    with TestClient(create_app(Settings(face_enabled=False, device="cpu"))) as client:
         response = client.post("/vision/detect", files={"image": ("bus.jpg", photo.read_bytes())})
     assert response.status_code == 200
     result = response.json()

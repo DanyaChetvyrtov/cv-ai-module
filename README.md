@@ -13,7 +13,7 @@
 Нужен Python 3.11+; рекомендуемый вариант — Python 3.12. GPU не требуется.
 
 ```bash
-git clone https://github.com/DanyaChetvyrtov/cv-test.git
+git clone https://github.com/DanyaChetvyrtov/cv-ai-module.git
 cd cv-test
 python -m venv .venv
 ```
@@ -131,7 +131,7 @@ Python и модель запускаются отдельным процесс�
 
 Dockerfile этого модуля собирает CPU-образ API. Запуск всего приложения и хранение весов
 настраиваются единственным Compose-файлом в корневом репозитории
-[cv-complex-test](https://github.com/DanyaChetvyrtov/cv-complex-test#запуск-всего-проекта).
+[cv-complex-test](https://github.com/DanyaChetvyrtov/cv-root#запуск-всего-проекта).
 В этом модуле Compose-файлов нет. Команды Docker Compose выполняйте из корня общего проекта.
 
 В общем стенде этот сервис доступен только внутри Docker-сети по `http://cv:8000`.
@@ -192,3 +192,40 @@ pytest -m integration
 [FastAPI UploadFile](https://fastapi.tiangolo.com/tutorial/request-files/).
 У Ultralytics есть условия AGPL-3.0 и коммерческого лицензирования:
 [официальная информация](https://www.ultralytics.com/license).
+
+## Local face embeddings for the employee registry
+
+`POST /faces/embedding` accepts multipart `image`. YuNet detects a single face and its five landmarks;
+SFace aligns/crops the face and extracts a normalized 128-dimensional embedding. Both models run locally on CPU.
+The internal response contains `model` (including the SFace SHA-256), `embedding`, `bbox`, and `inference_ms`.
+The BFF stores/templates and searches employees; the CV service has no employee database or Keycloak credentials.
+This endpoint remains private in the root Docker network and is never proxied directly to React.
+
+Exactly one face is required, with a detection score of at least 0.9 and a minimum side of 60 pixels after downscaling
+large photos to a 1280-pixel long side. Invalid/no/multiple/small faces return 422. Malformed input is 400, unsupported
+formats 415, oversized input 413. Inference failure is 503. No photos are persisted and the vector is never logged.
+Inference is serialized because the OpenCV DNN models keep mutable state.
+
+`CV_FACE_MODELS_PATH` defaults to `models`. At startup the two pinned OpenCV Zoo ONNX models are downloaded once,
+installed atomically and checked by SHA-256. Valid cached files work offline; a corrupt cache is repaired.
+`CV_FACE_ENABLED=false` disables this feature explicitly (the endpoint then returns 503).
+YuNet uses the MIT license, SFace Apache-2.0; original notices are in `licenses/` and included in the Docker image.
+Model source revision: `47534e27c9851bb1128ccc0102f1145e27f23f98`.
+
+* [OpenCV recognition tutorial](https://docs.opencv.org/4.11.0/d0/dd4/tutorial_dnn_face.html)
+* [YuNet model](https://github.com/opencv/opencv_zoo/tree/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_detection_yunet)
+* [SFace model](https://github.com/opencv/opencv_zoo/tree/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_recognition_sface)
+
+The employee demo has no liveness/anti-spoofing: a photo displayed to a camera can match. It is a photo comparison
+prototype, and the thresholds need calibration on your data before any access-control use.
+
+Real face integration test (independent of YOLO inference):
+
+```bash
+python scripts/fetch_test_face.py /tmp/cv-test-face.png
+CV_RUN_FACE_INTEGRATION=1 CV_FACE_TEST_IMAGE=/tmp/cv-test-face.png pytest tests/test_face_integration.py
+```
+
+The checksum-pinned fixture comes from scikit-image's public-domain NASA astronaut photo;
+[provenance](https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.astronaut).
+CI tests actual YuNet/SFace, a resized query, no face and multiple faces.

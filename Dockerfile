@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir torch==2.8.0 torchvision==0.23.0 \
     --index-url https://download.pytorch.org/whl/cpu
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY licenses ./licenses
 RUN pip install --no-cache-dir . \
     && useradd --create-home app \
     && mkdir -p /app/models && chown app:app /app/models
