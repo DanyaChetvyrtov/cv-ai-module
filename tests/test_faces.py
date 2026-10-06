@@ -24,9 +24,7 @@ class FakeFaces:
 
 
 def test_internal_face_api_validates_images_and_returns_a_vector(png_bytes):
-    with TestClient(
-        create_app(Settings(face_enabled=False), FakeFaces())
-    ) as client:
+    with TestClient(create_app(Settings(face_enabled=False), FakeFaces())) as client:
         result = client.post("/faces/embedding", files={"image": ("face.png", png_bytes)})
         assert result.status_code == 200
         assert len(result.json()["embedding"]) == 128
@@ -52,9 +50,7 @@ def test_face_validation_status_is_preserved(status, png_bytes):
         def extract(self, image):
             raise ImageInputError("Invalid face", status)
 
-    with TestClient(
-        create_app(Settings(face_enabled=False), InvalidFace())
-    ) as client:
+    with TestClient(create_app(Settings(face_enabled=False), InvalidFace())) as client:
         response = client.post("/faces/embedding", files={"image": ("a.png", png_bytes)})
         assert response.status_code == status
 
@@ -64,9 +60,7 @@ def test_face_model_failure_does_not_leak_details(png_bytes):
         def extract(self, image):
             raise RuntimeError("Private file/device details")
 
-    with TestClient(
-        create_app(Settings(face_enabled=False), FailedFace())
-    ) as client:
+    with TestClient(create_app(Settings(face_enabled=False), FailedFace())) as client:
         response = client.post("/faces/embedding", files={"image": ("a.png", png_bytes)})
         assert response.status_code == 503
         assert response.json() == {"detail": "Face recognition is unavailable."}
